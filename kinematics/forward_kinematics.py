@@ -21,6 +21,7 @@ import sys
 sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'joint_control'))
 
 from numpy.matlib import matrix, identity
+from numpy import sin, cos, dot
 
 from angle_interpolation import AngleInterpolationAgent
 
@@ -35,8 +36,11 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         self.transforms = {n: identity(4) for n in self.joint_names}
 
         # chains defines the name of chain and joints of the chain
-        self.chains = {'Head': ['HeadYaw', 'HeadPitch']
-                       # YOUR CODE HERE
+        self.chains = {'Head': ['HeadYaw', 'HeadPitch'],
+                       'LArm': ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll', 'LWristYaw'],
+                       'LLeg': ['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll'],
+                       'RLeg': ['RHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
+                       'RArm': ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'RWristYaw']
                        }
 
     def think(self, perception):
@@ -51,8 +55,24 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         :return: transformation
         :rtype: 4x4 matrix
         '''
-        T = matrix()
         # YOUR CODE HERE
+        s = sin(joint_angle)
+        c = cos(joint_angle)
+        if (joint_name[-3:] == 'Yaw'):
+            T = matrix([[c, -s, 0, 0],
+                       [s, c, 0, 0],
+                       [0, 0, 1, 0],
+                       [0, 0, 0, 1]])
+        elif (joint_name[-4:] == 'Roll'):
+            T = matrix([[1, 0 , 0, 0],
+                       [0, c, -s, 0],
+                       [0, s, c, 0],
+                       [0, 0, 0, 1]])
+        else:
+            T = matrix([[c, 0 , s, 0],
+                       [0, 1, 0, 0],
+                       [-s, 0, c, 0],
+                       [0, 0, 0, 1]])
 
         return T
 
@@ -65,8 +85,9 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
             T = identity(4)
             for joint in chain_joints:
                 angle = joints[joint]
-                Tl = local_trans(joint, angle)
+                Tl = self.local_trans(joint, angle)
                 # YOUR CODE HERE
+                T = dot(T, Tl)
 
                 self.transforms[joint] = T
 
