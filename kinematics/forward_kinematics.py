@@ -12,7 +12,7 @@
        coordinate into self.transforms of class ForwardKinematicsAgent
 
 * Hints:
-    the local_trans has to consider different joint axes and link parameters for differnt joints
+    the local_trans has to consider different joint axes and link parameters for different joints
 '''
 
 # add PYTHONPATH
@@ -55,6 +55,7 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         :return: transformation
         :rtype: 4x4 matrix
         '''
+
         # YOUR CODE HERE
         s = sin(joint_angle)
         c = cos(joint_angle)
