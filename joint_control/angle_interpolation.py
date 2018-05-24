@@ -22,7 +22,6 @@
 
 from pid import PIDAgent
 from keyframes import hello
-import numpy as np
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -47,7 +46,9 @@ class AngleInterpolationAgent(PIDAgent):
         if self.animation_start_time < 0:
             self.animation_start_time = perception.time
             
+        #compute current time to be able to compare with data points that have coordinates starting at 0
         curr_time = perception.time - self.animation_start_time
+        end = False #variable to check whether movement of joint ended
         
         for i, name in enumerate(names):
             
@@ -56,29 +57,34 @@ class AngleInterpolationAgent(PIDAgent):
             
             for j in range(len(times[i])-1):
                 
+                #current time is before first data point for current joint
                 if curr_time <= times[i][j]:
                     point_1 = perception.joint[name]
                     point_2 = keys[i][j][0]
                     right_derivative_point_1 = 0.0
-                    left_derivative_point_2 = keys[i][j][2][2]
-                    c_1, c_2, c_3, c_4 = self.control_points(point_1, point_2, right_derivative_point_1, left_derivative_point_2)
-                    time = self.time_in_range_zero_to_one(self.animation_start_time, times[i][j], curr_time)
-                    target_joints[name] = self.bezier_interpolation(c_1, c_2, c_2, c_4, time)
+                    left_derivative_point_2 = keys[i][j][1][2]
+                    time = self.time_in_range_zero_to_one(0.0, times[i][j], curr_time)
                     break
                     
+                #current time is in between two data points for current joint
                 elif curr_time > times[i][j] and curr_time <= times[i][j+1]:
                     point_1 = keys[i][j][0]
                     point_2 = keys[i][j+1][0]
-                    right_derivative_point_1 = keys[i][j+1][2][2]
-                    left_derivative_point_2 = keys[i][j][2][2]
-                    c_1, c_2, c_3, c_4 = self.control_points(point_1, point_2, right_derivative_point_1, left_derivative_point_2)
+                    right_derivative_point_1 = keys[i][j][2][2]
+                    left_derivative_point_2 = keys[i][j+1][1][2]
                     time = self.time_in_range_zero_to_one(times[i][j], times[i][j+1], curr_time)
-                    target_joints[name] = self.bezier_interpolation(c_1, c_2, c_2, c_4, time)
                     break
-                
+                # current time is after the end of data points for current joint
                 else:
-                    continue
+                    end = True
+                    break
             
+            #end of movement of joint, jump to next joint
+            if (end):
+                continue
+            
+            c_1, c_2, c_3, c_4 = self.control_points(point_1, point_2, right_derivative_point_1, left_derivative_point_2)
+            target_joints[name] = self.bezier_interpolation(c_1, c_2, c_3, c_4, time)
 
         return target_joints
 
@@ -89,11 +95,11 @@ class AngleInterpolationAgent(PIDAgent):
     #4 control points for cubic bezier interpolation
     def control_points(self, point_1, point_2, right_derivative_point_1, left_derivative_point_2):
         
-        return point_1, point_1 + (right_derivative_point_1/3), point_2 + (left_derivative_point_2/3), point_2
+        return point_1, point_1 + (right_derivative_point_1/3), point_2 - (left_derivative_point_2/3), point_2
     
     def time_in_range_zero_to_one(self, start_time, end_time, time):
         
-        return (time - end_time) / (end_time - start_time)
+        return (end_time - time) / (end_time - start_time)
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
