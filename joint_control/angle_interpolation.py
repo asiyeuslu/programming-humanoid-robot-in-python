@@ -21,7 +21,7 @@
 
 
 from pid import PIDAgent
-from keyframes import hello
+from keyframes import leftBellyToStand
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -57,7 +57,7 @@ class AngleInterpolationAgent(PIDAgent):
             
             for j in range(len(times[i])-1):
                 
-                #current time is before first data point for current joint
+                #current time is before or first data point for current joint
                 if curr_time <= times[i][j]:
                     point_1 = perception.joint[name]
                     point_2 = keys[i][j][0]
@@ -75,9 +75,12 @@ class AngleInterpolationAgent(PIDAgent):
                     time = self.time_in_range_zero_to_one(times[i][j], times[i][j+1], curr_time)
                     break
                 # current time is after the end of data points for current joint
-                else:
+                elif curr_time > times[len(times[i])-1]:
                     end = True
                     break
+                
+                else:
+                    continue
             
             #end of movement of joint, jump to next joint
             if (end):
@@ -95,7 +98,7 @@ class AngleInterpolationAgent(PIDAgent):
     #4 control points for cubic bezier interpolation
     def control_points(self, point_1, point_2, right_derivative_point_1, left_derivative_point_2):
         
-        return point_1, point_1 + (right_derivative_point_1/3), point_2 - (left_derivative_point_2/3), point_2
+        return point_1, point_1 + (right_derivative_point_1/3), point_2 + (left_derivative_point_2/3), point_2
     
     def time_in_range_zero_to_one(self, start_time, end_time, time):
         
@@ -103,5 +106,5 @@ class AngleInterpolationAgent(PIDAgent):
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
-    agent.keyframes = hello()  # CHANGE DIFFERENT KEYFRAMES
+    agent.keyframes = leftBellyToStand()  # CHANGE DIFFERENT KEYFRAMES
     agent.run()
