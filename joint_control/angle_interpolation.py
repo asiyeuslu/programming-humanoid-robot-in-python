@@ -22,6 +22,7 @@
 
 from pid import PIDAgent
 from keyframes import leftBellyToStand
+import numpy as np
 
 
 class AngleInterpolationAgent(PIDAgent):
@@ -74,13 +75,10 @@ class AngleInterpolationAgent(PIDAgent):
                     left_derivative_point_2 = keys[i][j+1][1][2]
                     time = self.time_in_range_zero_to_one(times[i][j], times[i][j+1], curr_time)
                     break
-                # current time is after the end of data points for current joint
-                elif curr_time > times[len(times[i])-1]:
+                #after last time point of curent joint
+                elif curr_time > times[i][len(times[i])-1]:
                     end = True
                     break
-                
-                else:
-                    continue
             
             #end of movement of joint, jump to next joint
             if (end):
@@ -93,12 +91,12 @@ class AngleInterpolationAgent(PIDAgent):
 
     def bezier_interpolation(self, control_1, control_2, control_3, control_4, time):
         
-        return ((1-time)**3) * control_1 + 3* time * ((1-time)**2) * control_2 + 3 * (time**2) * (1-time) * control_3 + (time**3) * control_4
+        return np.power((1-time),3) * control_1 + 3 * time * np.power((1-time),2) * control_2 + 3 * np.power(time,2) * (1-time) * control_3 + np.power(time,3) * control_4
 
     #4 control points for cubic bezier interpolation
     def control_points(self, point_1, point_2, right_derivative_point_1, left_derivative_point_2):
         
-        return point_1, point_1 + (right_derivative_point_1/3), point_2 + (left_derivative_point_2/3), point_2
+        return point_1, point_1 + right_derivative_point_1, point_2 + left_derivative_point_2, point_2
     
     def time_in_range_zero_to_one(self, start_time, end_time, time):
         
