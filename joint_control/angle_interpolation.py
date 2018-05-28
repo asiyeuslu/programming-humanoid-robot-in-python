@@ -21,7 +21,7 @@
 
 
 from pid import PIDAgent
-from keyframes import leftBellyToStand
+from keyframes import rightBackToStand
 import numpy as np
 
 
@@ -100,9 +100,9 @@ class AngleInterpolationAgent(PIDAgent):
     
     def time_in_range_zero_to_one(self, start_time, end_time, time):
         
-        return (end_time - time) / (end_time - start_time)
+        return (time - start_time) / (end_time - start_time)
 
 if __name__ == '__main__':
     agent = AngleInterpolationAgent()
-    agent.keyframes = leftBellyToStand()  # CHANGE DIFFERENT KEYFRAMES
+    agent.keyframes = rightBackToStand()  # CHANGE DIFFERENT KEYFRAMES
     agent.run()
