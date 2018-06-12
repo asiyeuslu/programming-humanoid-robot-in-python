@@ -37,11 +37,22 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
 
         # chains defines the name of chain and joints of the chain
         self.chains = {'Head': ['HeadYaw', 'HeadPitch'],
-                       'LArm': ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll', 'LWristYaw'],
+                       'LArm': ['LShoulderPitch', 'LShoulderRoll', 'LElbowYaw', 'LElbowRoll'],
                        'LLeg': ['LHipYawPitch', 'LHipRoll', 'LHipPitch', 'LKneePitch', 'LAnklePitch', 'LAnkleRoll'],
                        'RLeg': ['RHipYawPitch', 'RHipRoll', 'RHipPitch', 'RKneePitch', 'RAnklePitch', 'RAnkleRoll'],
-                       'RArm': ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll', 'RWristYaw']
+                       'RArm': ['RShoulderPitch', 'RShoulderRoll', 'RElbowYaw', 'RElbowRoll']
                        }
+        #lengths bodypart from.. to.. [X, Y, Z]
+        self.lengths = {'ArmShoulderRollElbowYaw': matrix([105.0, 15.0, 0.0]),
+                        'ArmElbowRollWristYaw': matrix([55.95, 0.0, 0.0]),
+                        'LegHipPitchKneePitch': matrix([0.0, 0.0, -100.0]),
+                        'LegKneePitchAnklePitch': matrix([0.0, 0.0, -102.9]),
+                        'LLegTorsoHip': matrix([0.0, 50.0, -85.0]),
+                        'RLegTorsoHip': matrix([0.0, -50.0, -85.0]),
+                        'LArmTorsoShoulder': matrix([0.0, 98.0, 100.0]),
+                        'RArmTorsoShoulder': matrix([0.0, -98.0, 100.0])
+                        }
+        self.start_time =self.perception.time
 
     def think(self, perception):
         self.forward_kinematics(perception.joint)
@@ -59,23 +70,56 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         # YOUR CODE HERE
         s = sin(joint_angle)
         c = cos(joint_angle)
+        #set rotation 
+        #Z-axis
         if (joint_name[-3:] == 'Yaw'):
             T = matrix([[c, -s, 0, 0],
                        [s, c, 0, 0],
                        [0, 0, 1, 0],
                        [0, 0, 0, 1]])
+        #X-axis
         elif (joint_name[-4:] == 'Roll'):
             T = matrix([[1, 0 , 0, 0],
                        [0, c, -s, 0],
                        [0, s, c, 0],
                        [0, 0, 0, 1]])
-        else:
-            T = matrix([[c, 0 , s, 0],
+        #Y-axis
+        elif (joint_name[-5:] == 'Pitch'):
+            T = matrix([[c, 0 , -s, 0],
                        [0, 1, 0, 0],
-                       [-s, 0, c, 0],
+                       [s, 0, c, 0],
                        [0, 0, 0, 1]])
+        #set X,Y,Z for joints that have a different coordinate difference to the joint before than 0,0,0
+        if (joint_name[0] == 'L' or joint_name[0] == 'R'):
+            if (joint_name == 'LElbowYaw' or joint_name == 'RElbowYaw'):
+                T[:3, -1] = self.lengths['ArmShoulderRollElbowYaw'].T
+            
+            elif (joint_name == 'LWristYaw' or joint_name == 'RWristYaw'):
+                T[:3, -1] = self.lengths['ArmElbowRollWristYaw'].T
+                
+            elif (joint_name == 'LKneePitch' or joint_name == 'RKneePitch'):
+                T[:3, -1] = self.lengths['LegHipPitchKneePitch'].T
+                
+            elif (joint_name == 'LAnklePitch' or joint_name == 'RAnklePitch'):
+                T[:3, -1] = self.lengths['LegKneePitchAnklePitch'].T
+                #for transformation from torso to hip (left leg)
+            elif (joint_name == 'LRoll'):
+                T[:3, -1] = self.lengths['LLegTorsoHip'].T
+                #for transformation from torso to hip (right leg)
+            elif (joint_name == 'RRoll'):
+                T[:3, -1] = self.lengths['RLegTorsoHip'].T
+                #for transformation from torso to shoulder (left arm)
+            elif (joint_name == 'LYaw'):
+                T[:3, -1] = self.lengths['LArmTorsoShoulder'].T
+                #for transformation from torso to shoulder (right arm)
+            elif (joint_name == 'RYaw'):
+                T[:3, -1] = self.lengths['RArmTorsoShoulder'].T
 
         return T
+        
+    #get X,Y,Z from transform
+    def from_trans(self, transform):
+        return matrix([transform[0, -1], transform[1 ,-1], transform[2,-1]])
 
     def forward_kinematics(self, joints):
         '''forward kinematics
@@ -85,6 +129,8 @@ class ForwardKinematicsAgent(AngleInterpolationAgent):
         for chain_joints in self.chains.values():
             T = identity(4)
             for joint in chain_joints:
+                if not(joint in joints):
+                    continue
                 angle = joints[joint]
                 Tl = self.local_trans(joint, angle)
                 # YOUR CODE HERE
