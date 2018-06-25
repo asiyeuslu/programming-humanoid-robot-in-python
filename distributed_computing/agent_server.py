@@ -50,7 +50,7 @@ class ServerAgent(InverseKinematicsAgent, PostureRecognitionAgent):
         '''
         # YOUR CODE HERE
         self.keyframes = pickle.loads(keyframes)
-        return "robot should do something"
+        return "execute_keyframes done! robot should do something!"
 
     def get_transform(self, name):
         '''get transform with given name

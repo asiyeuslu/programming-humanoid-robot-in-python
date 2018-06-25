@@ -9,6 +9,8 @@
 import weakref
 import xmlrpclib
 import pickle
+import threading
+#from keyframes import rightBackToStand
 
 class PostHandler(object):
     '''the post hander wraps function to be excuted in paralle
@@ -19,10 +21,14 @@ class PostHandler(object):
     def execute_keyframes(self, keyframes):
         '''non-blocking call of ClientAgent.execute_keyframes'''
         # YOUR CODE HERE
+        thread_execute_keyframes = threading.Thread(target=ClientAgent.execute_keyframes, args = (ClientAgent(), keyframes))
+        thread_execute_keyframes.start()
 
     def set_transform(self, effector_name, transform):
         '''non-blocking call of ClientAgent.set_transform'''
         # YOUR CODE HERE
+        thread_set_transform = threading.Thread(target=ClientAgent.set_transform, args = (ClientAgent(), effector_name, transform))
+        thread_set_transform.start()
 
 
 class ClientAgent(object):
@@ -76,6 +82,8 @@ class ClientAgent(object):
 if __name__ == '__main__':
     agent = ClientAgent()
     # TEST CODE HERE
-    agent.set_angle('LShoulderPitch', 1.56)
+    #agent.set_angle('LShoulderPitch', 1.56)
+#    keyframes = rightBackToStand()
+#    agent.post.execute_keyframes(keyframes)
 
 
